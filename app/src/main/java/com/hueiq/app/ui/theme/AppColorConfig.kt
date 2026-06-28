@@ -147,6 +147,18 @@ object AppColorConfig {
     }
 
     // ══════════════════════════════════════════════════════════
+    //  FILLED BUTTONS — explicit colors independent of primary/
+    //  onPrimary tokens. In dark mode, primary = SkyBlue and
+    //  onPrimary = DeepNavy (dark text on light bg = looks off).
+    //  Use ButtonDefaults.buttonColors() with these values for
+    //  all filled Button composables.
+    // ══════════════════════════════════════════════════════════
+    object ButtonFilled {
+        val containerColor = Palette.IbmBlue
+        val contentColor   = Palette.White
+    }
+
+    // ══════════════════════════════════════════════════════════
     //  SPECTRUM — logo iris only (decorative, not brand UI)
     // ══════════════════════════════════════════════════════════
     object Spectrum {

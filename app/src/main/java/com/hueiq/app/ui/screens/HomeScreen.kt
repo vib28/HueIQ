@@ -258,7 +258,11 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColorConfig.ButtonFilled.containerColor,
+                    contentColor   = AppColorConfig.ButtonFilled.contentColor
+                )
             ) {
                 Icon(Icons.Outlined.CameraAlt, contentDescription = null)
                 Spacer(Modifier.width(8.dp))

@@ -35,6 +35,7 @@ import com.hueiq.app.data.ColorEntry
 import com.hueiq.app.data.ColorLibraryData
 import com.hueiq.app.data.CvdType
 import com.hueiq.app.data.SavedColor
+import com.hueiq.app.ui.theme.LocalDarkTheme
 
 private fun SavedColor.toColorEntry() = ColorEntry(
     name = name, r = r, g = g, b = b, hex = hex,
@@ -159,7 +160,8 @@ fun ColorLibraryScreen(
 private fun ColorCard(entry: ColorEntry, onClick: () -> Unit) {
     val context = LocalContext.current
     val swatchColor = Color(entry.r, entry.g, entry.b)
-    val borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    val isDark = LocalDarkTheme.current
+    val borderColor = MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.6f else 0.3f)
 
     Card(
         onClick = onClick,

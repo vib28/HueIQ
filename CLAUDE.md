@@ -121,6 +121,10 @@ All hex values live in one object. Screens only reference `MaterialTheme.colorSc
 
 **Bug history — CTA card:** The "Color Vision Test" hero card originally had a dark navy background in light mode, making dark text invisible. Fixed by switching to an amber background (`#FFF0C2`) in light mode to match the Color Library tile, and `surfaceVariant` in dark mode to match all other feature tiles.
 
+**Bug history — dark mode buttons:** In dark mode, `Dark.primary = SkyBlue (#56B4E9)` and `Dark.onPrimary = DeepNavy (#003B6F)`. Material3 `Button{}` uses these tokens, causing filled buttons to show sky-blue background with dark navy text — visually indistinguishable from a disabled state. Fixed by adding `AppColorConfig.ButtonFilled` (`containerColor = IbmBlue`, `contentColor = White`) and applying it via `ButtonDefaults.buttonColors()` on all filled `Button` composables (SignInScreen "Log In", HomeScreen "Start Scanning"). The `ToggleItem` in SignInScreen was also patched to use `ButtonFilled` for its selected state instead of `primary`/`onPrimary`.
+
+**Bug history — dark swatch border:** Very dark color swatches (near-black entries like #161718, #21263A) in `ColorLibraryScreen` were invisible against the dark card background (#162236). The existing `outline.copy(alpha = 0.3f)` border was too faint. Fixed by using `alpha = 0.6f` in dark mode via `LocalDarkTheme.current`, keeping `0.3f` in light mode.
+
 **Key files:** `ui/theme/AppColorConfig.kt`, `ui/theme/Theme.kt`
 
 ---
@@ -223,7 +227,7 @@ CameraX is a Jetpack library that wraps Camera2 with lifecycle awareness. Bindin
 
 **Decision: Sample a 21×21 center region, not the full frame.**
 
-Analyzing every pixel of a full camera frame (e.g., 1920×1080 = 2M pixels) would be too slow for real-time. A 21×21 center square (441 pixels) gives a stable color reading from whatever is centered in the reticle. The center corresponds to where the reticle ring is drawn.
+Analyzing every pixel of a full camera frame (e.g., 1920×1080 = 2M pixels) would be too slow for real-time. A 21×21 center square (441 pixels) gives a stable color reading from whatever is centered in the reticle. The center corresponds to where the viewfinder's sampling indicator is drawn.
 
 **Decision: YUV_420_888 → RGB conversion, not requesting RGBA directly.**
 
@@ -239,6 +243,15 @@ Euclidean distance in RGB space is perceptually non-uniform — a small RGB delt
 
 **Bug fixed:** `ColorNameDatabase.nearest()` previously returned the input color's hex in `ColorMatch.hex` on every loop update (the named hex stored in `labColors` was discarded with `_`). Fixed to return the matched named color's hex. `ScanColorViewModel` was also updated to compute `DetectedColor.hex` directly from `r, g, b` rather than from `match.hex`, so the scanner always displays the actual detected color's hex code.
 
+**Decision: Corner-bracket viewfinder with transparent center circle and center dot.**
+
+The original `ReticleOverlay` used a large circle ring + center dot + 4 tick marks — a generic camera finder that didn't communicate color picking. Replaced with:
+- Four L-shaped corner brackets forming a square sampling frame (standard professional color picker UI)
+- Transparent center circle (ring outline only — camera feed shows through, no color fill)
+- Small solid dot at the exact center — marks the precise pixel the color is sampled from
+
+Requires `StrokeCap.Round` on bracket lines for clean termination.
+
 **Key files:** `ui/camera/ColorAnalyzer.kt`, `ui/camera/ScanColorViewModel.kt`, `ui/screens/ScanColorScreen.kt`, `data/ColorNameDatabase.kt`
 
 ---
@@ -247,9 +260,11 @@ Euclidean distance in RGB space is perceptually non-uniform — a small RGB delt
 
 **Decision: Two separate color databases.**
 
-`ColorNameDatabase.kt` (~150 CSS + X11 named colors) is used exclusively by the camera scanner for real-time nearest-name lookup via Lab distance. It is optimized for speed.
+Both `ColorNameDatabase.kt` and `ColorLibraryData.kt` are now powered by the same meodai/color-names "bestof" dataset (`assets/colornames.bestof.json`, 4,937 colors, CC0). They serve different roles and are kept as separate objects:
 
-`ColorLibraryData.kt` (190+ colors, 12 categories) is the structured library that users browse. It carries category metadata, is searchable by name, and includes CVD simulation output per color. These are different use cases — merging them would complicate both.
+`ColorNameDatabase.kt` is used exclusively by the camera scanner for real-time nearest-name lookup via Lab distance. Initialized via `init(context)` called from `ScanColorViewModel.init{}`.
+
+`ColorLibraryData.kt` is the structured library that users browse. It loads the same JSON asset, assigns each color a `ColorCategory` via HSL heuristics, and supports CVD simulation. Initialized via `init(context)` called from `AuthViewModel.init{}` (app-level, before any screen loads).
 
 **CVD simulation matrices (in `ColorLibraryData.kt`):**
 
@@ -263,7 +278,7 @@ The simulation applies standard transformation matrices in linear sRGB space to 
 
 `MY_COLORS` is a dynamic category that shows only colors the user has saved from the camera scanner. It integrates into the existing `FilterChip` row automatically because it is an enum value.
 
-**Color count:** ~300+ entries after the color expansion (added ~75–80 named colors across all categories).
+**Color count:** 4,937 entries from the meodai/color-names "bestof" dataset. Categories are auto-assigned at load time via HSL heuristics in `ColorLibraryData.assignCategory(r, g, b)`.
 
 **Bug fixed:** `ColorLibraryScreen` LazyColumn used `it.hex + it.name` as the item key. If a user saved a color whose hex and name exactly matched a library entry, the ALL view would crash with `IllegalArgumentException: Key was already used`. Fixed by including `it.category.name` in the key: `"${it.category.name}_${it.hex}_${it.name}"`, which differentiates library entries (e.g. `REDS`) from saved entries (`MY_COLORS`).
 
@@ -435,9 +450,11 @@ Dots in real Ishihara plates are irregular and non-overlapping. A regular grid w
 **Methods:** `saveUser(userData)`, `clearUser()` (preserves theme + saved colors), `cycleTheme(current)`, `saveColor(SavedColor)`, `removeColor(hex)`
 
 ### ColorNameDatabase (`data/ColorNameDatabase.kt`)
-- ~150 colors (CSS + X11 palette)
+- 4,937 curated colors from the meodai/color-names "bestof" dataset (CC0 license), bundled as `app/src/main/assets/colornames.bestof.json`
+- Loaded lazily on first `init(context)` call from `ScanColorViewModel.init{}` — JSON parsed once, Lab values precomputed, then cached
 - `nearest(r, g, b): ColorMatch` — converts input RGB to CIE Lab, returns the named color with the smallest Lab-space Euclidean distance
 - Used only by `ColorAnalyzer` / camera scanner
+- No external dependencies — uses `org.json.JSONArray` (built into Android SDK)
 
 ### ColorLibraryData (`data/ColorLibraryData.kt`)
 - `all: List<ColorEntry>` — 300+ entries with name, RGB, hex, category

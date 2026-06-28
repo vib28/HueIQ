@@ -37,6 +37,7 @@ import com.hueiq.app.ui.auth.AuthViewModel
 import com.hueiq.app.ui.auth.SignInState
 import com.hueiq.app.ui.components.BlinkMode
 import com.hueiq.app.ui.components.HueIQLogo
+import com.hueiq.app.ui.theme.AppColorConfig
 import com.hueiq.app.ui.theme.LocalDarkTheme
 
 @Composable
@@ -132,7 +133,11 @@ fun SignInScreen(
                     .fillMaxWidth()
                     .height(54.dp),
                 shape = RoundedCornerShape(14.dp),
-                enabled = signInState !is SignInState.Loading
+                enabled = signInState !is SignInState.Loading,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColorConfig.ButtonFilled.containerColor,
+                    contentColor   = AppColorConfig.ButtonFilled.contentColor
+                )
             ) {
                 if (signInState is SignInState.Loading) {
                     CircularProgressIndicator(
@@ -253,14 +258,14 @@ private fun RowScope.ToggleItem(text: String, selected: Boolean, onClick: () -> 
         modifier = Modifier
             .weight(1f)
             .clip(RoundedCornerShape(10.dp))
-            .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+            .background(if (selected) AppColorConfig.ButtonFilled.containerColor else Color.Transparent)
             .clickable { onClick() }
             .padding(vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (selected) AppColorConfig.ButtonFilled.contentColor else MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             fontSize = 15.sp
         )

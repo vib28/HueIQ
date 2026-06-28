@@ -222,6 +222,12 @@ The "Color Vision Test" CTA card on HomeScreen adapts to match other feature til
 - `LocalDarkTheme` CompositionLocal — any composable can read `LocalDarkTheme.current` without parameter drilling
 - All screens use `MaterialTheme.colorScheme.*` tokens — no hardcoded colors remain
 
+### Bug fixes (dark mode audit)
+
+**Filled buttons** — `Dark.primary = SkyBlue (#56B4E9)`, `Dark.onPrimary = DeepNavy (#003B6F)`. Material3 `Button{}` uses these tokens, causing sky-blue background with dark navy text in dark mode — visually indistinguishable from a disabled button. Fixed by adding `AppColorConfig.ButtonFilled` (`containerColor = IbmBlue`, `contentColor = White`) and applying it via `ButtonDefaults.buttonColors()` on all filled buttons (SignInScreen "Log In", HomeScreen "Start Scanning"). `ToggleItem` in SignInScreen also patched.
+
+**Dark color swatches** — Near-black swatches in `ColorLibraryScreen` (e.g. #161718, #21263A) were invisible against the dark card surface (#162236). The `outline.copy(alpha = 0.3f)` border was too faint. Fixed by using `alpha = 0.6f` in dark mode; `0.3f` in light mode.
+
 ### Theme flow
 ```
 DataStore (theme_mode key)
@@ -337,6 +343,9 @@ adb shell am start -n "com.hueiq.app/.MainActivity"
 - ✅ Bug fix: `ColorNameDatabase.nearest()` now returns the matched named color's hex, not the input hex (`ColorNameDatabase.kt`)
 - ✅ Bug fix: `ScanColorViewModel` computes `DetectedColor.hex` directly from r/g/b so the scanner always shows the actual detected hex (`ScanColorViewModel.kt`)
 - ✅ Bug fix: `IshiharaTestScreen` back arrow updated from deprecated `Icons.Outlined.ArrowBack` to `Icons.AutoMirrored.Outlined.ArrowBack`
+- ✅ Viewfinder redesign: replaced generic circle ring + tick marks with corner L-bracket frame + transparent center circle + center dot (`ScanColorScreen.kt` — `ReticleOverlay` composable). Camera feed shows through the circle; the solid center dot marks the exact sampling point.
+- ✅ Color name accuracy upgrade: replaced 150 hardcoded CSS/X11 colors in `ColorNameDatabase.kt` with 4,937 curated colors from the meodai/color-names "bestof" dataset (CC0), bundled as `assets/colornames.bestof.json`. Loaded once via `init(context)` in `ScanColorViewModel`. No new Gradle dependencies. Results: "Gazelle" instead of "Gray", "Dusty Rose" instead of "Pink", etc.
+- ✅ Color Library powered by meodai dataset: replaced ~300 hardcoded entries in `ColorLibraryData.kt` with the same 4,937-color asset. Categories (WHITES, GRAYS, REDS, etc.) are auto-assigned at load time via HSL heuristics. Initialized from `AuthViewModel.init{}`. CVD simulation and all category filters unchanged.
 
 ---
 
