@@ -10,14 +10,17 @@ import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.hueiq.app.data.SavedColor
 import com.hueiq.app.data.UserData
 import com.hueiq.app.data.UserRepository
 import com.hueiq.app.ui.theme.ThemeMode
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 enum class AuthMode { LOGIN, SIGNUP }
@@ -50,6 +53,10 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Emits the user's saved theme preference — read by MainActivity. */
     val themeMode = userRepository.themeFlow
+
+    /** Emits the list of colors the user has saved from the scanner. */
+    val savedColors = userRepository.savedColorsFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     init {
         // On cold start, check if a user session is already saved locally
@@ -156,6 +163,14 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     fun cycleTheme(current: ThemeMode) {
         viewModelScope.launch { userRepository.cycleTheme(current) }
+    }
+
+    fun saveColor(color: SavedColor) {
+        viewModelScope.launch { userRepository.saveColor(color) }
+    }
+
+    fun removeColor(hex: String) {
+        viewModelScope.launch { userRepository.removeColor(hex) }
     }
 }
 

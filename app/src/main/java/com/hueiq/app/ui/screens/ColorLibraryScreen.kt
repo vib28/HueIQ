@@ -34,25 +34,37 @@ import com.hueiq.app.data.ColorCategory
 import com.hueiq.app.data.ColorEntry
 import com.hueiq.app.data.ColorLibraryData
 import com.hueiq.app.data.CvdType
+import com.hueiq.app.data.SavedColor
+
+private fun SavedColor.toColorEntry() = ColorEntry(
+    name = name, r = r, g = g, b = b, hex = hex,
+    category = ColorCategory.MY_COLORS
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ColorLibraryScreen(onBack: () -> Unit) {
+fun ColorLibraryScreen(
+    onBack: () -> Unit,
+    savedColors: List<SavedColor> = emptyList(),
+    onColorClick: (r: Int, g: Int, b: Int, name: String) -> Unit = { _, _, _, _ -> }
+) {
     var selectedCategory by remember { mutableStateOf(ColorCategory.ALL) }
     var searchQuery by remember { mutableStateOf("") }
     var searchVisible by remember { mutableStateOf(false) }
 
-    val filtered = remember(selectedCategory, searchQuery) {
-        ColorLibraryData.all
-            .let { list ->
-                if (selectedCategory == ColorCategory.ALL) list
-                else list.filter { it.category == selectedCategory }
-            }
-            .let { list ->
-                if (searchQuery.isBlank()) list
-                else list.filter { it.name.contains(searchQuery.trim(), ignoreCase = true) }
-            }
+    val savedEntries = remember(savedColors) { savedColors.map { it.toColorEntry() } }
+
+    val filtered = remember(selectedCategory, searchQuery, savedColors) {
+        val base = when (selectedCategory) {
+            ColorCategory.MY_COLORS -> savedEntries
+            ColorCategory.ALL -> ColorLibraryData.all + savedEntries
+            else -> ColorLibraryData.all.filter { it.category == selectedCategory }
+        }
+        if (searchQuery.isBlank()) base
+        else base.filter { it.name.contains(searchQuery.trim(), ignoreCase = true) }
     }
+
+    val totalCount = ColorLibraryData.all.size + savedColors.size
 
     Scaffold(
         topBar = {
@@ -126,12 +138,12 @@ fun ColorLibraryScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(filtered, key = { it.hex + it.name }) { entry ->
-                ColorCard(entry = entry)
+                ColorCard(entry = entry, onClick = { onColorClick(entry.r, entry.g, entry.b, entry.name) })
             }
 
             item {
                 Text(
-                    text = "Showing ${filtered.size} of ${ColorLibraryData.all.size} colors",
+                    text = "Showing ${filtered.size} of $totalCount colors",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
@@ -144,12 +156,13 @@ fun ColorLibraryScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun ColorCard(entry: ColorEntry) {
+private fun ColorCard(entry: ColorEntry, onClick: () -> Unit) {
     val context = LocalContext.current
     val swatchColor = Color(entry.r, entry.g, entry.b)
     val borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
 
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),

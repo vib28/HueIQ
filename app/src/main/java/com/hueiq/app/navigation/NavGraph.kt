@@ -1,13 +1,18 @@
 package com.hueiq.app.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.hueiq.app.data.SavedColor
 import com.hueiq.app.ui.auth.AuthViewModel
 import com.hueiq.app.ui.auth.SignInState
+import com.hueiq.app.ui.screens.ColorDetailScreen
 import com.hueiq.app.ui.screens.ColorLibraryScreen
 import com.hueiq.app.ui.screens.HomeScreen
 import com.hueiq.app.ui.screens.IshiharaTestScreen
@@ -23,12 +28,17 @@ sealed class Screen(val route: String) {
     object IshiharaTest  : Screen("ishihara_test")
     object ScanColor     : Screen("scan_color")
     object ColorLibrary  : Screen("color_library")
+    object ColorDetail   : Screen("color_detail/{r}/{g}/{b}/{name}") {
+        fun createRoute(r: Int, g: Int, b: Int, name: String) =
+            "color_detail/$r/$g/$b/${Uri.encode(name)}"
+    }
 }
 
 @Composable
 fun AppNavigation(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
     val themeMode by authViewModel.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
+    val savedColors by authViewModel.savedColors.collectAsState()
 
     NavHost(navController = navController, startDestination = Screen.Loading.route) {
 
@@ -90,12 +100,55 @@ fun AppNavigation(authViewModel: AuthViewModel) {
 
         composable(Screen.ScanColor.route) {
             ScanColorScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                savedColors = savedColors,
+                onSaveColor = { r, g, b, name ->
+                    authViewModel.saveColor(SavedColor(name, r, g, b, "#%02X%02X%02X".format(r, g, b)))
+                },
+                onViewDetails = { r, g, b, name ->
+                    navController.navigate(Screen.ColorDetail.createRoute(r, g, b, name))
+                }
             )
         }
 
         composable(Screen.ColorLibrary.route) {
             ColorLibraryScreen(
+                onBack = { navController.popBackStack() },
+                savedColors = savedColors,
+                onColorClick = { r, g, b, name ->
+                    navController.navigate(Screen.ColorDetail.createRoute(r, g, b, name))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.ColorDetail.route,
+            arguments = listOf(
+                navArgument("r") { type = NavType.IntType },
+                navArgument("g") { type = NavType.IntType },
+                navArgument("b") { type = NavType.IntType },
+                navArgument("name") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val r = backStackEntry.arguments?.getInt("r") ?: 0
+            val g = backStackEntry.arguments?.getInt("g") ?: 0
+            val b = backStackEntry.arguments?.getInt("b") ?: 0
+            val name = backStackEntry.arguments?.getString("name") ?: ""
+            val hex = "#%02X%02X%02X".format(r, g, b)
+            val isSaved = savedColors.any { it.hex == hex }
+
+            ColorDetailScreen(
+                r = r,
+                g = g,
+                b = b,
+                colorName = name,
+                isSaved = isSaved,
+                onSave = {
+                    authViewModel.saveColor(SavedColor(name, r, g, b, hex))
+                },
+                onRemove = {
+                    authViewModel.removeColor(hex)
+                },
                 onBack = { navController.popBackStack() }
             )
         }

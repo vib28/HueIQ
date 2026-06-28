@@ -86,6 +86,35 @@ app/src/main/java/com/hueiq/app/
 - 4 answer buttons in a 2×2 grid (answers wired to logic — TODO)
 - Plate generation and scoring logic pending (see **Ishihara Plate Generation** section below)
 
+### 5. Scan Color Screen (`ScanColorScreen.kt`)
+- Live CameraX preview fills the screen
+- **21×21 center region** sampled every 120 ms (throttled); YUV_420_888 → RGB via BT.601 matrix
+- Reticle overlay: ring + center dot + 4 directional ticks drawn on Compose Canvas
+- **Bottom panel** (semi-transparent, dark):
+  - Color swatch (56dp rounded), detected name, hex code, copy-to-clipboard icon
+  - **"Save to Library"** button — saves color to DataStore My Colors; shows "Saved" (disabled) if hex already saved
+  - **"View Details"** button — navigates to Color Detail Screen without saving
+- CAMERA permission requested at runtime; rationale card shown if denied
+- Color matching: Lab-space nearest-neighbor against `ColorNameDatabase` (~150 CSS/X11 colors)
+
+### 6. Color Library Screen (`ColorLibraryScreen.kt`)
+- Searchable, filterable catalog of **300+ named colors** + user-saved "My Colors"
+- **Filter chips:** ALL, MY COLORS, WHITES, GRAYS, REDS, PINKS, ORANGES, YELLOWS, GREENS, TEALS, BLUES, PURPLES, BROWNS
+- **MY COLORS** chip shows only user-saved colors (from DataStore)
+- Per-card CVD simulation row: 3 small swatches (D / P / T abbreviations) showing how each color looks to each colorblind type
+- Tap any color card → navigates to Color Detail Screen
+- Hex code on each card is tappable to copy
+
+### 7. Color Detail Screen (`ColorDetailScreen.kt`)
+- **Fullscreen detail** for any color (built-in or saved)
+- Large original color swatch (220dp, full width)
+- Name + hex + copy button
+- "How colorblind users see this" section with 3 `FilterChip`s (Deuteranopia pre-selected)
+- Large simulated swatch (220dp, rounded) — updates live as CVD type changes
+- CVD info card with description of the selected deficiency type
+- **Bookmark icon** in TopAppBar — toggles save/remove from My Colors
+- Entry points: Color Library card tap, or Scanner "View Details" button
+
 ---
 
 ## Colorblind-Accessible Color Palette
@@ -228,8 +257,12 @@ All user data lives in `DataStore<Preferences>` (`data/user_prefs`):
 | `display_name` | Full name from Google |
 | `email` | Google email |
 | `photo_url` | Profile picture URL (nullable) |
+| `theme_mode` | `"LIGHT"` / `"DARK"` / absent (= SYSTEM) |
+| `saved_colors` | Pipe+semicolon delimited: `"name\|r\|g\|b;name\|r\|g\|b"` |
 
 No auth tokens stored — device-level Google account handles re-auth.
+
+**Sign-out behavior:** Only session keys are cleared (`user_id`, `display_name`, `email`, `photo_url`). `theme_mode` and `saved_colors` are preserved across sign-out.
 
 ---
 
@@ -259,6 +292,14 @@ App Start
                                      └─► HomeScreen
                                            ├─ "Color Vision Test" ──► IshiharaTestScreen
                                            │                               └─ Back ──► HomeScreen
+                                           ├─ "Scan Color" ──────────► ScanColorScreen
+                                           │                               ├─ "View Details" ──► ColorDetailScreen
+                                           │                               │                         └─ Back ──► ScanColorScreen
+                                           │                               └─ Back ──► HomeScreen
+                                           ├─ "Color Library" ───────► ColorLibraryScreen
+                                           │                               ├─ Tap color ──────► ColorDetailScreen
+                                           │                               │                         └─ Back ──► ColorLibraryScreen
+                                           │                               └─ Back ──► HomeScreen
                                            └─ Sign Out ──► SignInScreen
 ```
 
@@ -277,14 +318,21 @@ adb shell am start -n "com.hueiq.app/.MainActivity"
 
 ## TODOs
 
-| Area | Task |
-|------|------|
-| Auth | Wire email/password fields to an auth provider |
-| Camera | Implement Scan Color with CameraX |
-| **Ishihara** | **Implement plate generation + scoring logic (see section below)** |
-| Color Library | Room DB with named colors + colorblind-safe descriptions |
-| Vision Modes | Simulate deuteranopia / protanopia / tritanopia |
-| Profile photo | Load `photoUrl` with Coil in HomeScreen avatar |
+| Priority | Area | Task |
+|----------|------|------|
+| High | **Ishihara Test** | Implement plate generation + scoring logic (see **Ishihara Plate Generation** section below). Use LCH color space + Poisson disk sampling. |
+| Medium | **Profile photo** | Load `UserData.photoUrl` with Coil in HomeScreen avatar. Currently shows initials gradient. |
+| Medium | **Email/password auth** | Wire the existing email+password fields in `SignInScreen` to a real auth provider (Firebase Auth or similar). |
+| Low | **Vision Modes screen** | Implement the "Vision Modes" card destination — show the user how their surroundings would look with each CVD type. CVD simulation matrices already exist in `ColorLibraryData.kt`. |
+| Low | **Ishihara scoring** | After plate generation: track user answers, determine CVD type + severity, show results. |
+
+**Completed:**
+- ✅ Camera color scanner (CameraX, Lab-space matching)
+- ✅ Color Library (300+ colors, search, category chips, CVD simulation row)
+- ✅ Save scanned colors to "My Colors" (DataStore persistence)
+- ✅ Color Detail Screen (fullscreen swatch + CVD type selector + save/unsave)
+- ✅ Google Sign-In (Credential Manager API)
+- ✅ Theme toggle (SYSTEM / LIGHT / DARK, persisted to DataStore)
 
 ---
 

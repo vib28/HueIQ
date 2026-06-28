@@ -68,7 +68,8 @@ app/src/main/java/com/hueiq/app/
 │   │   ├── HomeScreen.kt                   # Main dashboard
 │   │   ├── IshiharaTestScreen.kt           # Color vision test (UI shell)
 │   │   ├── ScanColorScreen.kt              # Live camera color detection
-│   │   └── ColorLibraryScreen.kt           # Searchable color catalog
+│   │   ├── ColorLibraryScreen.kt           # Searchable color catalog
+│   │   └── ColorDetailScreen.kt            # Fullscreen color detail + CVD selector
 │   └── theme/
 │       ├── AppColorConfig.kt               # ★ SINGLE SOURCE OF TRUTH for all colors
 │       ├── Theme.kt                        # HueIQTheme; ThemeMode; LocalDarkTheme
@@ -193,6 +194,9 @@ The ViewModel is created once with `viewModels()` in `MainActivity` and passed d
 | `ishihara_test` | IshiharaTestScreen |
 | `scan_color` | ScanColorScreen |
 | `color_library` | ColorLibraryScreen |
+| `color_detail/{r}/{g}/{b}/{name}` | ColorDetailScreen |
+
+`Screen.ColorDetail.createRoute(r, g, b, name)` URL-encodes the name via `Uri.encode()`.
 
 **Navigation flow:**
 ```
@@ -200,8 +204,10 @@ App Start → Loading (1.5s min + DataStore read)
   ├─ Session exists → Home
   └─ No session → SignIn → Home (on success)
                     Home → IshiharaTest → Home (back)
-                    Home → ScanColor → Home (back)
-                    Home → ColorLibrary → Home (back)
+                    Home → ScanColor ──→ ColorDetail (back to ScanColor)
+                         └─ Home (back)
+                    Home → ColorLibrary → ColorDetail (back to ColorLibrary)
+                         └─ Home (back)
                     Home → Sign Out → SignIn
 ```
 
@@ -251,9 +257,13 @@ The simulation applies standard transformation matrices in linear sRGB space to 
 - **Protanopia** — red receptor deficiency (~2% of males)
 - **Tritanopia** — blue receptor deficiency (~0.01%)
 
-**Color categories:** WHITES, GRAYS, REDS, PINKS, ORANGES, YELLOWS, GREENS, TEALS, BLUES, PURPLES, BROWNS (+ ALL filter).
+**Color categories:** ALL, MY_COLORS, WHITES, GRAYS, REDS, PINKS, ORANGES, YELLOWS, GREENS, TEALS, BLUES, PURPLES, BROWNS.
 
-**Key files:** `data/ColorLibraryData.kt`, `data/ColorNameDatabase.kt`, `ui/screens/ColorLibraryScreen.kt`
+`MY_COLORS` is a dynamic category that shows only colors the user has saved from the camera scanner. It integrates into the existing `FilterChip` row automatically because it is an enum value.
+
+**Color count:** ~300+ entries after the color expansion (added ~75–80 named colors across all categories).
+
+**Key files:** `data/ColorLibraryData.kt`, `data/ColorNameDatabase.kt`, `ui/screens/ColorLibraryScreen.kt`, `ui/screens/ColorDetailScreen.kt`
 
 ---
 
@@ -275,6 +285,46 @@ The logo has two visual modes:
 - `eyeOnly = true`: Just the eye SVG from `ic_eye.xml` on a transparent background, with a navy stroke that makes it visible on both dark and light backgrounds. Used on LoadingScreen and SignInScreen.
 
 **Key files:** `ui/components/HueIQLogo.kt`, `res/drawable/ic_eye.xml`, `res/drawable/ic_launcher_foreground.xml`
+
+---
+
+### 3i. Saved Colors (My Colors)
+
+**Decision: DataStore delimited-string encoding for saved colors.**
+
+Rather than adding Room (a full SQL dependency) just for a user color list, colors are persisted as a pipe+semicolon delimited string in the existing `user_prefs` DataStore: `"name|r|g|b;name|r|g|b"`. This avoids a new dependency and keeps all persistence in one place.
+
+**Decision: Preserve saved colors across sign-out.**
+
+`clearUser()` only removes user session keys (`user_id`, `display_name`, `email`, `photo_url`). It does NOT remove `saved_colors` or `theme_mode`. Rationale: the color library is personal data the user built — losing it on sign-out would be surprising and frustrating.
+
+**Decision: Duplicate detection by hex.**
+
+`saveColor()` checks if the incoming color's hex already exists in the list. This prevents double-saving the same color from the scanner.
+
+**Decision: `ColorCategory.MY_COLORS` instead of a separate list.**
+
+Rather than a parallel "saved list" UI, saved colors surface naturally as a filter chip in the existing Color Library category row. When `MY_COLORS` is selected, the library shows only user-saved entries. When `ALL` is selected, saved entries are merged with the built-in list.
+
+**Decision: `isSaved` state in `ScanColorScreen` to toggle button label.**
+
+The scan panel compares the current detected color's hex against `savedColors` list from `AuthViewModel`. If already saved, the "Save to Library" button shows "Saved" and is disabled — preventing duplicate saves without requiring a toast.
+
+**Key files:** `data/UserRepository.kt`, `data/UserData.kt` (SavedColor), `ui/auth/AuthViewModel.kt`, `ui/screens/ScanColorScreen.kt`, `ui/screens/ColorLibraryScreen.kt`, `navigation/NavGraph.kt`
+
+---
+
+### 3j. Color Detail Screen
+
+**Decision: Fullscreen color detail reachable from both scanner and library.**
+
+Tapping any color in ColorLibraryScreen, or tapping "View Details" in ScanColorScreen, navigates to `ColorDetailScreen`. This is a new route `color_detail/{r}/{g}/{b}/{name}` — RGB are passed as integers; name is URL-encoded via `Uri.encode()` to handle spaces and special characters safely.
+
+**Decision: Save/unsave toggle in the TopAppBar.**
+
+The bookmark icon in the top bar lets the user save or remove a color without leaving the detail screen. `isSaved` is computed in `NavGraph` by comparing the color's hex against `authViewModel.savedColors`. This keeps state in the ViewModel, not in the composable.
+
+**Key file:** `ui/screens/ColorDetailScreen.kt`
 
 ---
 
@@ -336,14 +386,24 @@ Dots in real Ishihara plates are irregular and non-overlapping. A regular grid w
 - **Purpose:** Real-time camera color identification
 - **Camera:** CameraX Preview + ImageAnalysis bound to `LocalLifecycleOwner`
 - **Overlay:** Reticle ring + center dot + directional ticks drawn on Canvas
-- **Panel:** Color name, hex code, copy-to-clipboard button
+- **Panel:** Color swatch + name + hex + copy button + "Save to Library" button + "View Details" button
+- **Save behavior:** Button shows "Saved" (disabled) if current hex already in `savedColors`; otherwise saves and shows Toast "Saved to My Colors"
 - **Permission:** Requests CAMERA at runtime; shows rationale dialog if denied
-- **Navigation out:** ← back to Home
+- **Parameters:** `savedColors`, `onSaveColor(r,g,b,name)`, `onViewDetails(r,g,b,name)`
+- **Navigation out:** ← back to Home, → ColorDetail (View Details)
 
 ### ColorLibraryScreen (`ui/screens/ColorLibraryScreen.kt`)
-- **Purpose:** Browsable, searchable reference of 190+ named colors
-- **Features:** Search field, category filter chips, per-color CVD simulation row (D/P/T swatches)
-- **Navigation out:** ← back to Home
+- **Purpose:** Browsable, searchable reference of 300+ named colors + user-saved colors
+- **Features:** Search field, category filter chips (including MY_COLORS), per-color CVD simulation row (D/P/T swatches), tap any card → ColorDetail
+- **Parameters:** `savedColors: List<SavedColor>`, `onColorClick(r,g,b,name)`
+- **MY_COLORS filter:** Shows only user-saved colors; ALL filter merges built-in + saved
+- **Navigation out:** ← back to Home, → ColorDetail (card tap)
+
+### ColorDetailScreen (`ui/screens/ColorDetailScreen.kt`)
+- **Purpose:** Fullscreen color detail with CVD simulation selector
+- **Layout:** TopAppBar (back + bookmark toggle), large original swatch (220dp), name+hex+copy row, "How colorblind users see this" section, 3 FilterChips (Deuteranopia pre-selected), large simulated swatch (220dp), CVD info Card
+- **Parameters:** `r, g, b, colorName, isSaved, onSave, onRemove, onBack`
+- **Navigation out:** ← back (to ScanColor or ColorLibrary depending on entry point)
 
 ---
 
@@ -361,12 +421,14 @@ Dots in real Ishihara plates are irregular and non-overlapping. A regular grid w
 | `email` | String | Google email |
 | `photo_url` | String? | Profile picture URL |
 | `theme_mode` | String? | `"LIGHT"` / `"DARK"` / absent (= SYSTEM) |
+| `saved_colors` | String? | Pipe+semicolon delimited: `"name\|r\|g\|b;name\|r\|g\|b"` |
 
 **Flows exposed:**
 - `userFlow: Flow<UserData?>` — emits `null` when no session
 - `themeFlow: Flow<ThemeMode>` — emits `SYSTEM` by default
+- `savedColorsFlow: Flow<List<SavedColor>>` — parses saved_colors string; emits empty list by default
 
-**Methods:** `saveUser(userData)`, `clearUser()`, `cycleTheme(current)`
+**Methods:** `saveUser(userData)`, `clearUser()` (preserves theme + saved colors), `cycleTheme(current)`, `saveColor(SavedColor)`, `removeColor(hex)`
 
 ### ColorNameDatabase (`data/ColorNameDatabase.kt`)
 - ~150 colors (CSS + X11 palette)
@@ -374,10 +436,10 @@ Dots in real Ishihara plates are irregular and non-overlapping. A regular grid w
 - Used only by `ColorAnalyzer` / camera scanner
 
 ### ColorLibraryData (`data/ColorLibraryData.kt`)
-- `allColors: List<ColorEntry>` — 190+ entries with name, RGB, hex, category
+- `all: List<ColorEntry>` — 300+ entries with name, RGB, hex, category
 - `simulate(r, g, b, cvdType): Triple<Int,Int,Int>` — applies CVD transformation matrix
 - `ColorEntry(name, r, g, b, hex, category)`
-- `ColorCategory` enum: ALL, WHITES, GRAYS, REDS, PINKS, ORANGES, YELLOWS, GREENS, TEALS, BLUES, PURPLES, BROWNS
+- `ColorCategory` enum: ALL, MY_COLORS, WHITES, GRAYS, REDS, PINKS, ORANGES, YELLOWS, GREENS, TEALS, BLUES, PURPLES, BROWNS
 - `CvdType` enum: DEUTERANOPIA ("D"), PROTANOPIA ("P"), TRITANOPIA ("T")
 
 ### Data Models
@@ -388,6 +450,14 @@ data class UserData(
     val displayName: String,
     val email: String,
     val photoUrl: String? = null
+)
+
+data class SavedColor(         // user-saved color from camera scanner
+    val name: String,
+    val r: Int,
+    val g: Int,
+    val b: Int,
+    val hex: String            // "#RRGGBB" format
 )
 
 data class DetectedColor(      // from ScanColorViewModel

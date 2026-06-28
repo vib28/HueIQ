@@ -15,3 +15,11 @@ data class UserData(
     val email: String,
     val photoUrl: String? = null
 )
+
+data class SavedColor(
+    val name: String,
+    val r: Int,
+    val g: Int,
+    val b: Int,
+    val hex: String
+)

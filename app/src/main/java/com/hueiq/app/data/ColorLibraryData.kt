@@ -4,6 +4,7 @@ import kotlin.math.roundToInt
 
 enum class ColorCategory(val label: String) {
     ALL("All"),
+    MY_COLORS("My Colors"),
     WHITES("Whites"),
     GRAYS("Grays"),
     REDS("Reds"),
@@ -86,11 +87,15 @@ object ColorLibraryData {
         entry("Papaya Whip",      255, 239, 213, ColorCategory.WHITES),
         entry("Peach Puff",       255, 218, 185, ColorCategory.WHITES),
         entry("Misty Rose",       255, 228, 225, ColorCategory.WHITES),
-        entry("Lavender Blush",   255, 240, 245, ColorCategory.WHITES),
         entry("Alice Blue",       240, 248, 255, ColorCategory.WHITES),
         entry("Honeydew",         240, 255, 240, ColorCategory.WHITES),
         entry("Mint Cream",       245, 255, 250, ColorCategory.WHITES),
         entry("Azure",            240, 255, 255, ColorCategory.WHITES),
+        entry("Cream",            255, 253, 208, ColorCategory.WHITES),
+        entry("Pearl",            234, 224, 200, ColorCategory.WHITES),
+        entry("Eggshell",         240, 234, 214, ColorCategory.WHITES),
+        entry("Champagne",        247, 231, 206, ColorCategory.WHITES),
+        entry("Vanilla",          243, 229, 171, ColorCategory.WHITES),
 
         // ── Grays ────────────────────────────────────────────────────────────
         entry("Gainsboro",        220, 220, 220, ColorCategory.GRAYS),
@@ -105,6 +110,11 @@ object ColorLibraryData {
         entry("Charcoal",          54,  69,  79, ColorCategory.GRAYS),
         entry("Near Black",        20,  20,  20, ColorCategory.GRAYS),
         entry("Black",              0,   0,   0, ColorCategory.GRAYS),
+        entry("Ash Gray",         178, 190, 181, ColorCategory.GRAYS),
+        entry("French Gray",      188, 184, 177, ColorCategory.GRAYS),
+        entry("Pewter",           150, 150, 150, ColorCategory.GRAYS),
+        entry("Gunmetal",          42,  52,  57, ColorCategory.GRAYS),
+        entry("Battleship Gray",  130, 143, 134, ColorCategory.GRAYS),
 
         // ── Reds ─────────────────────────────────────────────────────────────
         entry("Red",              255,   0,   0, ColorCategory.REDS),
@@ -122,6 +132,11 @@ object ColorLibraryData {
         entry("Venetian Red",     200,   8,  21, ColorCategory.REDS),
         entry("Brick Red",        203,  65,  84, ColorCategory.REDS),
         entry("Rust",             183,  65,  14, ColorCategory.REDS),
+        entry("Alizarin",         227,  38,  54, ColorCategory.REDS),
+        entry("Carmine",          150,   0,  24, ColorCategory.REDS),
+        entry("Cadmium Red",      227,   0,  34, ColorCategory.REDS),
+        entry("Rose Red",         194,  30,  86, ColorCategory.REDS),
+        entry("Wine Red",         114,  47,  55, ColorCategory.REDS),
 
         // ── Pinks ────────────────────────────────────────────────────────────
         entry("Pink",             255, 192, 203, ColorCategory.PINKS),
@@ -136,6 +151,11 @@ object ColorLibraryData {
         entry("Rose",             255,   0, 127, ColorCategory.PINKS),
         entry("Blush",            222,  93, 131, ColorCategory.PINKS),
         entry("Lavender Blush",   255, 240, 245, ColorCategory.PINKS),
+        entry("Carnation Pink",   255, 166, 201, ColorCategory.PINKS),
+        entry("Flamingo",         252, 142, 172, ColorCategory.PINKS),
+        entry("Raspberry",        227,  11,  92, ColorCategory.PINKS),
+        entry("Baby Pink",        244, 194, 194, ColorCategory.PINKS),
+        entry("Coral Pink",       248, 131, 121, ColorCategory.PINKS),
 
         // ── Oranges ──────────────────────────────────────────────────────────
         entry("Orange Red",       255,  69,   0, ColorCategory.ORANGES),
@@ -148,6 +168,11 @@ object ColorLibraryData {
         entry("Peach",            255, 203, 164, ColorCategory.ORANGES),
         entry("Apricot",          251, 206, 177, ColorCategory.ORANGES),
         entry("Burnt Sienna",     233, 116,  81, ColorCategory.ORANGES),
+        entry("Mango",            255, 130,  67, ColorCategory.ORANGES),
+        entry("Persimmon",        236,  88,   0, ColorCategory.ORANGES),
+        entry("Papaya",           255, 164,  80, ColorCategory.ORANGES),
+        entry("Tiger Orange",     253, 106,   2, ColorCategory.ORANGES),
+        entry("Amber Orange",     255, 126,   0, ColorCategory.ORANGES),
 
         // ── Yellows ──────────────────────────────────────────────────────────
         entry("Yellow",           255, 255,   0, ColorCategory.YELLOWS),
@@ -163,6 +188,11 @@ object ColorLibraryData {
         entry("Mustard",          255, 219,  88, ColorCategory.YELLOWS),
         entry("Lemon Yellow",     255, 244,  79, ColorCategory.YELLOWS),
         entry("Straw",            228, 217, 111, ColorCategory.YELLOWS),
+        entry("Canary",           255, 255, 153, ColorCategory.YELLOWS),
+        entry("Butter",           255, 251, 176, ColorCategory.YELLOWS),
+        entry("Saffron",          244, 196,  48, ColorCategory.YELLOWS),
+        entry("Corn Yellow",      251, 236,  93, ColorCategory.YELLOWS),
+        entry("Flax",             238, 220, 130, ColorCategory.YELLOWS),
 
         // ── Greens ───────────────────────────────────────────────────────────
         entry("Green Yellow",     173, 255,  47, ColorCategory.GREENS),
@@ -189,6 +219,14 @@ object ColorLibraryData {
         entry("Emerald",            0, 201,  87, ColorCategory.GREENS),
         entry("Jade",               0, 168, 107, ColorCategory.GREENS),
         entry("Mint Green",       152, 255, 152, ColorCategory.GREENS),
+        entry("Sage",             188, 184, 138, ColorCategory.GREENS),
+        entry("Moss",             138, 154,  91, ColorCategory.GREENS),
+        entry("Pistachio",        147, 197, 114, ColorCategory.GREENS),
+        entry("Malachite",         11, 218,  81, ColorCategory.GREENS),
+        entry("Celadon",          172, 225, 175, ColorCategory.GREENS),
+        entry("Artichoke",        143, 151, 121, ColorCategory.GREENS),
+        entry("Pear Green",       209, 226,  49, ColorCategory.GREENS),
+        entry("Avocado",           86, 130,   3, ColorCategory.GREENS),
 
         // ── Teals ────────────────────────────────────────────────────────────
         entry("Cyan",               0, 255, 255, ColorCategory.TEALS),
@@ -205,6 +243,10 @@ object ColorLibraryData {
         entry("Teal",               0, 128, 128, ColorCategory.TEALS),
         entry("Dark Cyan",          0, 139, 139, ColorCategory.TEALS),
         entry("Dark Teal",          0,  80,  80, ColorCategory.TEALS),
+        entry("Verdigris",         67, 179, 174, ColorCategory.TEALS),
+        entry("Ocean Green",       77, 169, 148, ColorCategory.TEALS),
+        entry("Viridian",          64, 130, 109, ColorCategory.TEALS),
+        entry("Robin Egg Blue",     0, 204, 204, ColorCategory.TEALS),
 
         // ── Blues ────────────────────────────────────────────────────────────
         entry("Steel Blue",        70, 130, 180, ColorCategory.BLUES),
@@ -228,6 +270,11 @@ object ColorLibraryData {
         entry("Slate Blue",       106,  90, 205, ColorCategory.BLUES),
         entry("Medium Slate Blue",123, 104, 238, ColorCategory.BLUES),
         entry("Dark Slate Blue",   72,  61, 139, ColorCategory.BLUES),
+        entry("Prussian Blue",      0,  49,  83, ColorCategory.BLUES),
+        entry("Sapphire",          15,  82, 186, ColorCategory.BLUES),
+        entry("Baby Blue",        137, 207, 240, ColorCategory.BLUES),
+        entry("Denim",             21,  96, 189, ColorCategory.BLUES),
+        entry("Cerulean",           0, 123, 167, ColorCategory.BLUES),
 
         // ── Purples ──────────────────────────────────────────────────────────
         entry("Lavender",         230, 230, 250, ColorCategory.PURPLES),
@@ -244,6 +291,11 @@ object ColorLibraryData {
         entry("Mauve",            224, 176, 255, ColorCategory.PURPLES),
         entry("Grape",            111,  45, 168, ColorCategory.PURPLES),
         entry("Eggplant",          97,  64,  81, ColorCategory.PURPLES),
+        entry("Heliotrope",       223, 115, 255, ColorCategory.PURPLES),
+        entry("Byzantium",        112,  41,  99, ColorCategory.PURPLES),
+        entry("Wisteria",         201, 160, 220, ColorCategory.PURPLES),
+        entry("Mulberry",         197,  75, 140, ColorCategory.PURPLES),
+        entry("Royal Purple",     120,  81, 169, ColorCategory.PURPLES),
 
         // ── Browns ───────────────────────────────────────────────────────────
         entry("Sandy Brown",      244, 164,  96, ColorCategory.BROWNS),
@@ -265,6 +317,13 @@ object ColorLibraryData {
         entry("Mahogany",         192,  64,   0, ColorCategory.BROWNS),
         entry("Copper",           184, 115,  51, ColorCategory.BROWNS),
         entry("Cornsilk",         255, 248, 220, ColorCategory.BROWNS),
-        entry("Dark Goldenrod",   184, 134,  11, ColorCategory.BROWNS)
+        entry("Taupe",             72,  60,  50, ColorCategory.BROWNS),
+        entry("Wenge",            100,  84,  82, ColorCategory.BROWNS),
+        entry("Ecru",             194, 178, 128, ColorCategory.BROWNS),
+        entry("Fawn",             229, 170, 112, ColorCategory.BROWNS),
+        entry("Umber",             99,  81,  71, ColorCategory.BROWNS),
+        entry("Sepia",            112,  66,  20, ColorCategory.BROWNS),
+        entry("Tawny",            205,  87,   0, ColorCategory.BROWNS),
+        entry("Beaver",           159, 129, 112, ColorCategory.BROWNS)
     )
 }

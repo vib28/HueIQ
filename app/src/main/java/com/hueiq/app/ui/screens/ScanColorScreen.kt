@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hueiq.app.data.SavedColor
 import com.hueiq.app.ui.camera.ColorAnalyzer
 import com.hueiq.app.ui.camera.DetectedColor
 import com.hueiq.app.ui.camera.ScanColorViewModel
@@ -46,6 +48,9 @@ import java.util.concurrent.Executors
 @Composable
 fun ScanColorScreen(
     onBack: () -> Unit,
+    savedColors: List<SavedColor> = emptyList(),
+    onSaveColor: (r: Int, g: Int, b: Int, name: String) -> Unit = { _, _, _, _ -> },
+    onViewDetails: (r: Int, g: Int, b: Int, name: String) -> Unit = { _, _, _, _ -> },
     viewModel: ScanColorViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -68,6 +73,9 @@ fun ScanColorScreen(
             ReticleOverlay()
             ColorInfoPanel(
                 detectedColor = detectedColor,
+                savedColors = savedColors,
+                onSaveColor = onSaveColor,
+                onViewDetails = onViewDetails,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         } else {
@@ -186,20 +194,27 @@ private fun ReticleOverlay() {
 }
 
 @Composable
-private fun ColorInfoPanel(detectedColor: DetectedColor?, modifier: Modifier = Modifier) {
+private fun ColorInfoPanel(
+    detectedColor: DetectedColor?,
+    savedColors: List<SavedColor>,
+    onSaveColor: (r: Int, g: Int, b: Int, name: String) -> Unit,
+    onViewDetails: (r: Int, g: Int, b: Int, name: String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(136.dp),
+        modifier = modifier.fillMaxWidth(),
         color = Color.Black.copy(alpha = 0.72f),
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
     ) {
         if (detectedColor == null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(136.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
                     text = "Point camera at a color",
                     color = Color.White.copy(alpha = 0.6f),
@@ -208,53 +223,95 @@ private fun ColorInfoPanel(detectedColor: DetectedColor?, modifier: Modifier = M
             }
         } else {
             val swatchColor = Color(detectedColor.r, detectedColor.g, detectedColor.b)
-            Row(
+            val isAlreadySaved = savedColors.any { it.hex == detectedColor.hex }
+
+            Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 14.dp)
             ) {
-                // Color swatch
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(swatchColor)
-                        .border(1.5.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                )
-
-                Spacer(Modifier.width(18.dp))
-
-                // Color name + hex
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = detectedColor.name,
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                // Top row: swatch + name/hex + copy icon
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(swatchColor)
+                            .border(1.5.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = detectedColor.hex,
-                        color = Color.White.copy(alpha = 0.70f),
-                        fontSize = 14.sp,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-
-                // Copy hex button
-                IconButton(
-                    onClick = {
+                    Spacer(Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = detectedColor.name,
+                            color = Color.White,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            text = detectedColor.hex,
+                            color = Color.White.copy(alpha = 0.70f),
+                            fontSize = 13.sp,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                    IconButton(onClick = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         clipboard.setPrimaryClip(ClipData.newPlainText("hex", detectedColor.hex))
+                        Toast.makeText(context, "Copied ${detectedColor.hex}", Toast.LENGTH_SHORT).show()
+                    }) {
+                        Icon(
+                            imageVector = Icons.Outlined.ContentCopy,
+                            contentDescription = "Copy hex code",
+                            tint = Color.White.copy(alpha = 0.75f),
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                // Bottom row: Save + View Details buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.ContentCopy,
-                        contentDescription = "Copy hex code",
-                        tint = Color.White.copy(alpha = 0.75f),
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Button(
+                        onClick = {
+                            if (!isAlreadySaved) {
+                                onSaveColor(detectedColor.r, detectedColor.g, detectedColor.b, detectedColor.name)
+                                Toast.makeText(context, "Saved to My Colors", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        enabled = !isAlreadySaved,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black,
+                            disabledContainerColor = Color.White.copy(alpha = 0.3f),
+                            disabledContentColor = Color.White.copy(alpha = 0.6f)
+                        )
+                    ) {
+                        Text(
+                            text = if (isAlreadySaved) "Saved" else "Save to Library",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = { onViewDetails(detectedColor.r, detectedColor.g, detectedColor.b, detectedColor.name) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.6f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                    ) {
+                        Text("View Details", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
         }
