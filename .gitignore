@@ -22,6 +22,10 @@ local.properties
 # Claude Code
 .claude/
 
+# Project knowledge base (internal only)
+CLAUDE.md
+walkthrough.md
+
 # JetBrains / Kotlin tooling
 .junie/
 .kotlin/

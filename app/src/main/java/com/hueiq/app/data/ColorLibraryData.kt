@@ -1,5 +1,7 @@
 package com.hueiq.app.data
 
+import android.content.Context
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 enum class ColorCategory(val label: String) {
@@ -35,7 +37,27 @@ data class ColorEntry(
 
 object ColorLibraryData {
 
-    val all: List<ColorEntry> by lazy { buildList() }
+    @Volatile private var _all: List<ColorEntry> = emptyList()
+    val all: List<ColorEntry> get() = _all
+
+    // Called once from AuthViewModel.init{}. Idempotent.
+    fun init(context: Context) {
+        if (_all.isNotEmpty()) return
+        val json = context.assets.open("colornames.bestof.json")
+            .bufferedReader().use { it.readText() }
+        val arr = org.json.JSONArray(json)
+        val result = ArrayList<ColorEntry>(arr.length())
+        for (i in 0 until arr.length()) {
+            val obj = arr.getJSONObject(i)
+            val hex = obj.getString("hex")
+            val name = obj.getString("name")
+            val r = Integer.parseInt(hex.substring(1, 3), 16)
+            val g = Integer.parseInt(hex.substring(3, 5), 16)
+            val b = Integer.parseInt(hex.substring(5, 7), 16)
+            result.add(ColorEntry(name, r, g, b, hex.uppercase(), assignCategory(r, g, b)))
+        }
+        _all = result
+    }
 
     /** Simulates how the given RGB looks under a CVD type using standard matrices (sRGB space). */
     fun simulate(r: Int, g: Int, b: Int, cvd: CvdType): Triple<Int, Int, Int> {
@@ -67,263 +89,30 @@ object ColorLibraryData {
         )
     }
 
-    private fun entry(name: String, r: Int, g: Int, b: Int, cat: ColorCategory) =
-        ColorEntry(name, r, g, b, "#%02X%02X%02X".format(r, g, b), cat)
+    private fun assignCategory(r: Int, g: Int, b: Int): ColorCategory {
+        val rf = r / 255f; val gf = g / 255f; val bf = b / 255f
+        val max = maxOf(rf, gf, bf); val min = minOf(rf, gf, bf); val delta = max - min
+        val l = (max + min) / 2f
+        val s = if (delta == 0f) 0f
+                else delta / (1f - abs(2f * l - 1f))
+        val h = if (delta == 0f) 0f else when (max) {
+            rf -> 60f * (((gf - bf) / delta) % 6f)
+            gf -> 60f * ((bf - rf) / delta + 2f)
+            else -> 60f * ((rf - gf) / delta + 4f)
+        }.let { if (it < 0f) it + 360f else it }
 
-    private fun buildList() = listOf(
-        // ── Whites ───────────────────────────────────────────────────────────
-        entry("White",            255, 255, 255, ColorCategory.WHITES),
-        entry("Snow",             255, 250, 250, ColorCategory.WHITES),
-        entry("Ivory",            255, 255, 240, ColorCategory.WHITES),
-        entry("Floral White",     255, 250, 240, ColorCategory.WHITES),
-        entry("Ghost White",      248, 248, 255, ColorCategory.WHITES),
-        entry("Seashell",         255, 245, 238, ColorCategory.WHITES),
-        entry("Linen",            250, 240, 230, ColorCategory.WHITES),
-        entry("Old Lace",         253, 245, 230, ColorCategory.WHITES),
-        entry("Antique White",    250, 235, 215, ColorCategory.WHITES),
-        entry("Bisque",           255, 228, 196, ColorCategory.WHITES),
-        entry("Moccasin",         255, 228, 181, ColorCategory.WHITES),
-        entry("Blanched Almond",  255, 235, 205, ColorCategory.WHITES),
-        entry("Papaya Whip",      255, 239, 213, ColorCategory.WHITES),
-        entry("Peach Puff",       255, 218, 185, ColorCategory.WHITES),
-        entry("Misty Rose",       255, 228, 225, ColorCategory.WHITES),
-        entry("Alice Blue",       240, 248, 255, ColorCategory.WHITES),
-        entry("Honeydew",         240, 255, 240, ColorCategory.WHITES),
-        entry("Mint Cream",       245, 255, 250, ColorCategory.WHITES),
-        entry("Azure",            240, 255, 255, ColorCategory.WHITES),
-        entry("Cream",            255, 253, 208, ColorCategory.WHITES),
-        entry("Pearl",            234, 224, 200, ColorCategory.WHITES),
-        entry("Eggshell",         240, 234, 214, ColorCategory.WHITES),
-        entry("Champagne",        247, 231, 206, ColorCategory.WHITES),
-        entry("Vanilla",          243, 229, 171, ColorCategory.WHITES),
-
-        // ── Grays ────────────────────────────────────────────────────────────
-        entry("Gainsboro",        220, 220, 220, ColorCategory.GRAYS),
-        entry("Light Gray",       211, 211, 211, ColorCategory.GRAYS),
-        entry("Silver",           192, 192, 192, ColorCategory.GRAYS),
-        entry("Dark Gray",        169, 169, 169, ColorCategory.GRAYS),
-        entry("Gray",             128, 128, 128, ColorCategory.GRAYS),
-        entry("Dim Gray",         105, 105, 105, ColorCategory.GRAYS),
-        entry("Light Slate Gray", 119, 136, 153, ColorCategory.GRAYS),
-        entry("Slate Gray",       112, 128, 144, ColorCategory.GRAYS),
-        entry("Dark Slate Gray",   47,  79,  79, ColorCategory.GRAYS),
-        entry("Charcoal",          54,  69,  79, ColorCategory.GRAYS),
-        entry("Near Black",        20,  20,  20, ColorCategory.GRAYS),
-        entry("Black",              0,   0,   0, ColorCategory.GRAYS),
-        entry("Ash Gray",         178, 190, 181, ColorCategory.GRAYS),
-        entry("French Gray",      188, 184, 177, ColorCategory.GRAYS),
-        entry("Pewter",           150, 150, 150, ColorCategory.GRAYS),
-        entry("Gunmetal",          42,  52,  57, ColorCategory.GRAYS),
-        entry("Battleship Gray",  130, 143, 134, ColorCategory.GRAYS),
-
-        // ── Reds ─────────────────────────────────────────────────────────────
-        entry("Red",              255,   0,   0, ColorCategory.REDS),
-        entry("Dark Red",         139,   0,   0, ColorCategory.REDS),
-        entry("Firebrick",        178,  34,  34, ColorCategory.REDS),
-        entry("Crimson",          220,  20,  60, ColorCategory.REDS),
-        entry("Indian Red",       205,  92,  92, ColorCategory.REDS),
-        entry("Light Coral",      240, 128, 128, ColorCategory.REDS),
-        entry("Salmon",           250, 128, 114, ColorCategory.REDS),
-        entry("Dark Salmon",      233, 150, 122, ColorCategory.REDS),
-        entry("Light Salmon",     255, 160, 122, ColorCategory.REDS),
-        entry("Tomato",           255,  99,  71, ColorCategory.REDS),
-        entry("Scarlet",          196,  30,  58, ColorCategory.REDS),
-        entry("Ruby",             155,  17,  30, ColorCategory.REDS),
-        entry("Venetian Red",     200,   8,  21, ColorCategory.REDS),
-        entry("Brick Red",        203,  65,  84, ColorCategory.REDS),
-        entry("Rust",             183,  65,  14, ColorCategory.REDS),
-        entry("Alizarin",         227,  38,  54, ColorCategory.REDS),
-        entry("Carmine",          150,   0,  24, ColorCategory.REDS),
-        entry("Cadmium Red",      227,   0,  34, ColorCategory.REDS),
-        entry("Rose Red",         194,  30,  86, ColorCategory.REDS),
-        entry("Wine Red",         114,  47,  55, ColorCategory.REDS),
-
-        // ── Pinks ────────────────────────────────────────────────────────────
-        entry("Pink",             255, 192, 203, ColorCategory.PINKS),
-        entry("Light Pink",       255, 182, 193, ColorCategory.PINKS),
-        entry("Hot Pink",         255, 105, 180, ColorCategory.PINKS),
-        entry("Deep Pink",        255,  20, 147, ColorCategory.PINKS),
-        entry("Magenta",          255,   0, 255, ColorCategory.PINKS),
-        entry("Orchid",           218, 112, 214, ColorCategory.PINKS),
-        entry("Plum",             221, 160, 221, ColorCategory.PINKS),
-        entry("Violet",           238, 130, 238, ColorCategory.PINKS),
-        entry("Medium Orchid",    186,  85, 211, ColorCategory.PINKS),
-        entry("Rose",             255,   0, 127, ColorCategory.PINKS),
-        entry("Blush",            222,  93, 131, ColorCategory.PINKS),
-        entry("Lavender Blush",   255, 240, 245, ColorCategory.PINKS),
-        entry("Carnation Pink",   255, 166, 201, ColorCategory.PINKS),
-        entry("Flamingo",         252, 142, 172, ColorCategory.PINKS),
-        entry("Raspberry",        227,  11,  92, ColorCategory.PINKS),
-        entry("Baby Pink",        244, 194, 194, ColorCategory.PINKS),
-        entry("Coral Pink",       248, 131, 121, ColorCategory.PINKS),
-
-        // ── Oranges ──────────────────────────────────────────────────────────
-        entry("Orange Red",       255,  69,   0, ColorCategory.ORANGES),
-        entry("Orange",           255, 165,   0, ColorCategory.ORANGES),
-        entry("Dark Orange",      255, 140,   0, ColorCategory.ORANGES),
-        entry("Coral",            255, 127,  80, ColorCategory.ORANGES),
-        entry("Burnt Orange",     204,  85,   0, ColorCategory.ORANGES),
-        entry("Tangerine",        242, 133,   0, ColorCategory.ORANGES),
-        entry("Pumpkin",          255, 117,  24, ColorCategory.ORANGES),
-        entry("Peach",            255, 203, 164, ColorCategory.ORANGES),
-        entry("Apricot",          251, 206, 177, ColorCategory.ORANGES),
-        entry("Burnt Sienna",     233, 116,  81, ColorCategory.ORANGES),
-        entry("Mango",            255, 130,  67, ColorCategory.ORANGES),
-        entry("Persimmon",        236,  88,   0, ColorCategory.ORANGES),
-        entry("Papaya",           255, 164,  80, ColorCategory.ORANGES),
-        entry("Tiger Orange",     253, 106,   2, ColorCategory.ORANGES),
-        entry("Amber Orange",     255, 126,   0, ColorCategory.ORANGES),
-
-        // ── Yellows ──────────────────────────────────────────────────────────
-        entry("Yellow",           255, 255,   0, ColorCategory.YELLOWS),
-        entry("Gold",             255, 215,   0, ColorCategory.YELLOWS),
-        entry("Amber",            255, 191,   0, ColorCategory.YELLOWS),
-        entry("Light Yellow",     255, 255, 224, ColorCategory.YELLOWS),
-        entry("Lemon Chiffon",    255, 250, 205, ColorCategory.YELLOWS),
-        entry("Light Goldenrod",  250, 250, 210, ColorCategory.YELLOWS),
-        entry("Khaki",            240, 230, 140, ColorCategory.YELLOWS),
-        entry("Dark Khaki",       189, 183, 107, ColorCategory.YELLOWS),
-        entry("Goldenrod",        218, 165,  32, ColorCategory.YELLOWS),
-        entry("Dark Goldenrod",   184, 134,  11, ColorCategory.YELLOWS),
-        entry("Mustard",          255, 219,  88, ColorCategory.YELLOWS),
-        entry("Lemon Yellow",     255, 244,  79, ColorCategory.YELLOWS),
-        entry("Straw",            228, 217, 111, ColorCategory.YELLOWS),
-        entry("Canary",           255, 255, 153, ColorCategory.YELLOWS),
-        entry("Butter",           255, 251, 176, ColorCategory.YELLOWS),
-        entry("Saffron",          244, 196,  48, ColorCategory.YELLOWS),
-        entry("Corn Yellow",      251, 236,  93, ColorCategory.YELLOWS),
-        entry("Flax",             238, 220, 130, ColorCategory.YELLOWS),
-
-        // ── Greens ───────────────────────────────────────────────────────────
-        entry("Green Yellow",     173, 255,  47, ColorCategory.GREENS),
-        entry("Chartreuse",       127, 255,   0, ColorCategory.GREENS),
-        entry("Lawn Green",       124, 252,   0, ColorCategory.GREENS),
-        entry("Lime",               0, 255,   0, ColorCategory.GREENS),
-        entry("Lime Green",        50, 205,  50, ColorCategory.GREENS),
-        entry("Yellow Green",     154, 205,  50, ColorCategory.GREENS),
-        entry("Medium Spring Green", 0, 250, 154, ColorCategory.GREENS),
-        entry("Spring Green",       0, 255, 127, ColorCategory.GREENS),
-        entry("Light Green",      144, 238, 144, ColorCategory.GREENS),
-        entry("Pale Green",       152, 251, 152, ColorCategory.GREENS),
-        entry("Dark Sea Green",   143, 188, 143, ColorCategory.GREENS),
-        entry("Medium Sea Green",  60, 179, 113, ColorCategory.GREENS),
-        entry("Sea Green",         46, 139,  87, ColorCategory.GREENS),
-        entry("Forest Green",      34, 139,  34, ColorCategory.GREENS),
-        entry("Green",              0, 128,   0, ColorCategory.GREENS),
-        entry("Dark Green",         0, 100,   0, ColorCategory.GREENS),
-        entry("Olive Green",      107, 142,  35, ColorCategory.GREENS),
-        entry("Olive",            128, 128,   0, ColorCategory.GREENS),
-        entry("Dark Olive Green",  85, 107,  47, ColorCategory.GREENS),
-        entry("Fern Green",        79, 121,  66, ColorCategory.GREENS),
-        entry("Hunter Green",      53,  94,  59, ColorCategory.GREENS),
-        entry("Emerald",            0, 201,  87, ColorCategory.GREENS),
-        entry("Jade",               0, 168, 107, ColorCategory.GREENS),
-        entry("Mint Green",       152, 255, 152, ColorCategory.GREENS),
-        entry("Sage",             188, 184, 138, ColorCategory.GREENS),
-        entry("Moss",             138, 154,  91, ColorCategory.GREENS),
-        entry("Pistachio",        147, 197, 114, ColorCategory.GREENS),
-        entry("Malachite",         11, 218,  81, ColorCategory.GREENS),
-        entry("Celadon",          172, 225, 175, ColorCategory.GREENS),
-        entry("Artichoke",        143, 151, 121, ColorCategory.GREENS),
-        entry("Pear Green",       209, 226,  49, ColorCategory.GREENS),
-        entry("Avocado",           86, 130,   3, ColorCategory.GREENS),
-
-        // ── Teals ────────────────────────────────────────────────────────────
-        entry("Cyan",               0, 255, 255, ColorCategory.TEALS),
-        entry("Aqua",               0, 255, 255, ColorCategory.TEALS),
-        entry("Light Cyan",       224, 255, 255, ColorCategory.TEALS),
-        entry("Pale Turquoise",   175, 238, 238, ColorCategory.TEALS),
-        entry("Aquamarine",       127, 255, 212, ColorCategory.TEALS),
-        entry("Medium Aquamarine",102, 205, 170, ColorCategory.TEALS),
-        entry("Turquoise",         64, 224, 208, ColorCategory.TEALS),
-        entry("Medium Turquoise",  72, 209, 204, ColorCategory.TEALS),
-        entry("Dark Turquoise",     0, 206, 209, ColorCategory.TEALS),
-        entry("Light Sea Green",   32, 178, 170, ColorCategory.TEALS),
-        entry("Cadet Blue",        95, 158, 160, ColorCategory.TEALS),
-        entry("Teal",               0, 128, 128, ColorCategory.TEALS),
-        entry("Dark Cyan",          0, 139, 139, ColorCategory.TEALS),
-        entry("Dark Teal",          0,  80,  80, ColorCategory.TEALS),
-        entry("Verdigris",         67, 179, 174, ColorCategory.TEALS),
-        entry("Ocean Green",       77, 169, 148, ColorCategory.TEALS),
-        entry("Viridian",          64, 130, 109, ColorCategory.TEALS),
-        entry("Robin Egg Blue",     0, 204, 204, ColorCategory.TEALS),
-
-        // ── Blues ────────────────────────────────────────────────────────────
-        entry("Steel Blue",        70, 130, 180, ColorCategory.BLUES),
-        entry("Dodger Blue",       30, 144, 255, ColorCategory.BLUES),
-        entry("Deep Sky Blue",      0, 191, 255, ColorCategory.BLUES),
-        entry("Cornflower Blue",  100, 149, 237, ColorCategory.BLUES),
-        entry("Sky Blue",         135, 206, 235, ColorCategory.BLUES),
-        entry("Light Sky Blue",   135, 206, 250, ColorCategory.BLUES),
-        entry("Light Steel Blue", 176, 196, 222, ColorCategory.BLUES),
-        entry("Powder Blue",      176, 224, 230, ColorCategory.BLUES),
-        entry("Light Blue",       173, 216, 230, ColorCategory.BLUES),
-        entry("Royal Blue",        65, 105, 225, ColorCategory.BLUES),
-        entry("Blue",               0,   0, 255, ColorCategory.BLUES),
-        entry("Medium Blue",        0,   0, 205, ColorCategory.BLUES),
-        entry("Dark Blue",          0,   0, 139, ColorCategory.BLUES),
-        entry("Navy",               0,   0, 128, ColorCategory.BLUES),
-        entry("Midnight Blue",     25,  25, 112, ColorCategory.BLUES),
-        entry("IBM Blue",           0, 114, 178, ColorCategory.BLUES),
-        entry("Cobalt Blue",        0,  71, 171, ColorCategory.BLUES),
-        entry("Periwinkle",       204, 204, 255, ColorCategory.BLUES),
-        entry("Slate Blue",       106,  90, 205, ColorCategory.BLUES),
-        entry("Medium Slate Blue",123, 104, 238, ColorCategory.BLUES),
-        entry("Dark Slate Blue",   72,  61, 139, ColorCategory.BLUES),
-        entry("Prussian Blue",      0,  49,  83, ColorCategory.BLUES),
-        entry("Sapphire",          15,  82, 186, ColorCategory.BLUES),
-        entry("Baby Blue",        137, 207, 240, ColorCategory.BLUES),
-        entry("Denim",             21,  96, 189, ColorCategory.BLUES),
-        entry("Cerulean",           0, 123, 167, ColorCategory.BLUES),
-
-        // ── Purples ──────────────────────────────────────────────────────────
-        entry("Lavender",         230, 230, 250, ColorCategory.PURPLES),
-        entry("Thistle",          216, 191, 216, ColorCategory.PURPLES),
-        entry("Medium Purple",    147, 112, 219, ColorCategory.PURPLES),
-        entry("Dark Orchid",      153,  50, 204, ColorCategory.PURPLES),
-        entry("Dark Violet",      148,   0, 211, ColorCategory.PURPLES),
-        entry("Blue Violet",      138,  43, 226, ColorCategory.PURPLES),
-        entry("Purple",           128,   0, 128, ColorCategory.PURPLES),
-        entry("Dark Magenta",     139,   0, 139, ColorCategory.PURPLES),
-        entry("Indigo",            75,   0, 130, ColorCategory.PURPLES),
-        entry("Amethyst",         153, 102, 204, ColorCategory.PURPLES),
-        entry("Lilac",            200, 162, 200, ColorCategory.PURPLES),
-        entry("Mauve",            224, 176, 255, ColorCategory.PURPLES),
-        entry("Grape",            111,  45, 168, ColorCategory.PURPLES),
-        entry("Eggplant",          97,  64,  81, ColorCategory.PURPLES),
-        entry("Heliotrope",       223, 115, 255, ColorCategory.PURPLES),
-        entry("Byzantium",        112,  41,  99, ColorCategory.PURPLES),
-        entry("Wisteria",         201, 160, 220, ColorCategory.PURPLES),
-        entry("Mulberry",         197,  75, 140, ColorCategory.PURPLES),
-        entry("Royal Purple",     120,  81, 169, ColorCategory.PURPLES),
-
-        // ── Browns ───────────────────────────────────────────────────────────
-        entry("Sandy Brown",      244, 164,  96, ColorCategory.BROWNS),
-        entry("Burlywood",        222, 184, 135, ColorCategory.BROWNS),
-        entry("Tan",              210, 180, 140, ColorCategory.BROWNS),
-        entry("Wheat",            245, 222, 179, ColorCategory.BROWNS),
-        entry("Navajo White",     255, 222, 173, ColorCategory.BROWNS),
-        entry("Peru",             205, 133,  63, ColorCategory.BROWNS),
-        entry("Chocolate",        210, 105,  30, ColorCategory.BROWNS),
-        entry("Saddle Brown",     139,  69,  19, ColorCategory.BROWNS),
-        entry("Sienna",           160,  82,  45, ColorCategory.BROWNS),
-        entry("Brown",            165,  42,  42, ColorCategory.BROWNS),
-        entry("Dark Brown",       101,  67,  33, ColorCategory.BROWNS),
-        entry("Maroon",           128,   0,   0, ColorCategory.BROWNS),
-        entry("Raw Umber",        115,  74,  18, ColorCategory.BROWNS),
-        entry("Caramel",          196, 122,  54, ColorCategory.BROWNS),
-        entry("Coffee",           111,  78,  55, ColorCategory.BROWNS),
-        entry("Chestnut",         149,  69,  53, ColorCategory.BROWNS),
-        entry("Mahogany",         192,  64,   0, ColorCategory.BROWNS),
-        entry("Copper",           184, 115,  51, ColorCategory.BROWNS),
-        entry("Cornsilk",         255, 248, 220, ColorCategory.BROWNS),
-        entry("Taupe",             72,  60,  50, ColorCategory.BROWNS),
-        entry("Wenge",            100,  84,  82, ColorCategory.BROWNS),
-        entry("Ecru",             194, 178, 128, ColorCategory.BROWNS),
-        entry("Fawn",             229, 170, 112, ColorCategory.BROWNS),
-        entry("Umber",             99,  81,  71, ColorCategory.BROWNS),
-        entry("Sepia",            112,  66,  20, ColorCategory.BROWNS),
-        entry("Tawny",            205,  87,   0, ColorCategory.BROWNS),
-        entry("Beaver",           159, 129, 112, ColorCategory.BROWNS)
-    )
+        return when {
+            l >= 0.92f                                          -> ColorCategory.WHITES
+            s < 0.12f || (l < 0.15f && s < 0.30f)             -> ColorCategory.GRAYS
+            h < 45f && l in 0.10f..0.50f && s in 0.15f..0.70f -> ColorCategory.BROWNS
+            h < 15f || h >= 345f                               -> ColorCategory.REDS
+            h < 45f                                            -> ColorCategory.ORANGES
+            h < 70f                                            -> ColorCategory.YELLOWS
+            h < 165f                                           -> ColorCategory.GREENS
+            h < 195f                                           -> ColorCategory.TEALS
+            h < 260f                                           -> ColorCategory.BLUES
+            h < 320f                                           -> ColorCategory.PURPLES
+            else                                               -> ColorCategory.PINKS
+        }
+    }
 }

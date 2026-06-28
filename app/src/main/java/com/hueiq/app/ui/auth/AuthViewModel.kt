@@ -10,6 +10,7 @@ import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.hueiq.app.data.ColorLibraryData
 import com.hueiq.app.data.SavedColor
 import com.hueiq.app.data.UserData
 import com.hueiq.app.data.UserRepository
@@ -59,6 +60,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     init {
+        ColorLibraryData.init(application)
         // On cold start, check if a user session is already saved locally
         viewModelScope.launch {
             val savedUser = userRepository.userFlow.first()

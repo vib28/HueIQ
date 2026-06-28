@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -155,40 +156,46 @@ private fun ReticleOverlay() {
         androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
             val cx = size.width / 2
             val cy = size.height / 2
-            val ringRadius = 55.dp.toPx()
-            val dotRadius = 5.dp.toPx()
-            val tickLength = 14.dp.toPx()
-            val tickGap = 8.dp.toPx()
-            val strokeWidth = 2.dp.toPx()
-            val ringColor = Color.White.copy(alpha = 0.88f)
+            val halfFrame = 68.dp.toPx()
+            val armLen = 22.dp.toPx()
+            val strokePx = 2.5.dp.toPx()
+            val white = Color.White.copy(alpha = 0.92f)
 
-            // Outer ring
+            // Four corner L-brackets forming a square sampling frame
+            val corners = listOf(
+                Offset(cx - halfFrame, cy - halfFrame) to Pair(1f, 1f),
+                Offset(cx + halfFrame, cy - halfFrame) to Pair(-1f, 1f),
+                Offset(cx - halfFrame, cy + halfFrame) to Pair(1f, -1f),
+                Offset(cx + halfFrame, cy + halfFrame) to Pair(-1f, -1f),
+            )
+            corners.forEach { (corner, dir) ->
+                drawLine(
+                    color = white,
+                    start = corner,
+                    end = Offset(corner.x + dir.first * armLen, corner.y),
+                    strokeWidth = strokePx,
+                    cap = StrokeCap.Round
+                )
+                drawLine(
+                    color = white,
+                    start = corner,
+                    end = Offset(corner.x, corner.y + dir.second * armLen),
+                    strokeWidth = strokePx,
+                    cap = StrokeCap.Round
+                )
+            }
+
+            // Transparent center circle — shows camera feed through, ring marks the sample zone
+            val circleRadius = 18.dp.toPx()
             drawCircle(
-                color = ringColor,
-                radius = ringRadius,
+                color = white,
+                radius = circleRadius,
                 center = Offset(cx, cy),
-                style = Stroke(width = strokeWidth)
+                style = Stroke(width = 2.dp.toPx())
             )
 
-            // Center dot
-            drawCircle(
-                color = Color.White,
-                radius = dotRadius,
-                center = Offset(cx, cy)
-            )
-
-            // Tick marks (top / bottom / left / right)
-            val outer = ringRadius + tickGap
-            val inner = outer + tickLength
-
-            // Top
-            drawLine(ringColor, Offset(cx, cy - outer), Offset(cx, cy - inner), strokeWidth)
-            // Bottom
-            drawLine(ringColor, Offset(cx, cy + outer), Offset(cx, cy + inner), strokeWidth)
-            // Left
-            drawLine(ringColor, Offset(cx - outer, cy), Offset(cx - inner, cy), strokeWidth)
-            // Right
-            drawLine(ringColor, Offset(cx + outer, cy), Offset(cx + inner, cy), strokeWidth)
+            // Center dot — the exact pixel the color is sampled from
+            drawCircle(color = white, radius = 3.dp.toPx(), center = Offset(cx, cy))
         }
     }
 }

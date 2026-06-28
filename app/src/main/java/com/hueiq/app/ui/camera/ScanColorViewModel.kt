@@ -16,6 +16,10 @@ data class DetectedColor(
 
 class ScanColorViewModel(application: Application) : AndroidViewModel(application) {
 
+    init {
+        ColorNameDatabase.init(application)
+    }
+
     private val _detectedColor = MutableStateFlow<DetectedColor?>(null)
     val detectedColor = _detectedColor.asStateFlow()
 
