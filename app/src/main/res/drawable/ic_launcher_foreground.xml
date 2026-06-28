@@ -1,0 +1,65 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!--
+        ChromaSight Icon — Spectrum Eye
+        Viewport: 108×108. Adaptive icon safe zone: 18–90 on each axis.
+        Design: White almond eye with a 6-sector rainbow iris and dark pupil.
+        The eye sits naturally on the dark navy background without needing a stroke.
+
+        Iris circle center: (54, 54), radius: 18
+        Sector endpoints (r=18, angles 0°–300° in 60° steps, Y-down coords):
+          0°   → (72.0, 54.0)
+          60°  → (63.0, 69.6)
+          120° → (45.0, 69.6)
+          180° → (36.0, 54.0)
+          240° → (45.0, 38.4)
+          300° → (63.0, 38.4)
+    -->
+
+    <!-- ── Eye sclera (white almond / lens shape) ── -->
+    <path
+        android:fillColor="#FAFAFA"
+        android:pathData="M26,54 C38,27 70,27 82,54 C70,81 38,81 26,54 Z" />
+
+    <!-- ── Iris: 6 spectrum sectors ── -->
+    <!-- Red   (  0° → 60°) -->
+    <path android:fillColor="#E53935"
+        android:pathData="M54,54 L72,54 A18,18 0 0 1 63,69.6 Z" />
+    <!-- Orange ( 60° → 120°) -->
+    <path android:fillColor="#FB8C00"
+        android:pathData="M54,54 L63,69.6 A18,18 0 0 1 45,69.6 Z" />
+    <!-- Yellow (120° → 180°) -->
+    <path android:fillColor="#FDD835"
+        android:pathData="M54,54 L45,69.6 A18,18 0 0 1 36,54 Z" />
+    <!-- Green  (180° → 240°) -->
+    <path android:fillColor="#43A047"
+        android:pathData="M54,54 L36,54 A18,18 0 0 1 45,38.4 Z" />
+    <!-- Blue   (240° → 300°) -->
+    <path android:fillColor="#1E88E5"
+        android:pathData="M54,54 L45,38.4 A18,18 0 0 1 63,38.4 Z" />
+    <!-- Violet (300° → 360°) -->
+    <path android:fillColor="#8E24AA"
+        android:pathData="M54,54 L63,38.4 A18,18 0 0 1 72,54 Z" />
+
+    <!-- ── Iris ring border ── -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#050D2A"
+        android:strokeWidth="1.5"
+        android:pathData="M54,36 A18,18 0 1 0 54,72 A18,18 0 1 0 54,36 Z" />
+
+    <!-- ── Pupil ── -->
+    <path
+        android:fillColor="#050D2A"
+        android:pathData="M54,46 A8,8 0 1 0 54,62 A8,8 0 1 0 54,46 Z" />
+
+    <!-- ── Pupil highlight (offset for depth) ── -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M58,48.5 A2.8,2.8 0 1 0 58,54.1 A2.8,2.8 0 1 0 58,48.5 Z" />
+
+</vector>

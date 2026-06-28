@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Head *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\vibm\\\\AndroidStudioProjects\\\\MyApplication\" -Recurse -Depth 4 | Where-Object { !$_.PSIsContainer } | Select-Object -First 80 | ForEach-Object { $_.FullName })",
+      "PowerShell(cd \"C:\\\\Users\\\\vibm\\\\AndroidStudioProjects\\\\MyApplication\"; $env:JAVA_HOME = \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\"; .\\\\gradlew.bat assembleDebug 2>&1 | Select-Object -Last 60)",
+      "PowerShell(adb devices *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell($adb = \"C:\\\\Users\\\\vibm\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb devices)",
+      "PowerShell(cd \"C:\\\\Users\\\\vibm\\\\AndroidStudioProjects\\\\MyApplication\"; $env:JAVA_HOME = \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\"; .\\\\gradlew.bat assembleDebug 2>&1 | Select-Object -Last 20)",
+      "PowerShell($adb = \"C:\\\\Users\\\\vibm\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb install -r \"C:\\\\Users\\\\vibm\\\\AndroidStudioProjects\\\\MyApplication\\\\app\\\\build\\\\outputs\\\\apk\\\\debug\\\\app-debug.apk\")",
+      "PowerShell($adb = \"C:\\\\Users\\\\vibm\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb shell am start -n \"com.hueiq.app/.MainActivity\")"
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!--
+        HueIQ Standalone Eye
+        Same geometry as ic_launcher_foreground but with a navy stroke on the
+        almond so it reads clearly on both dark (loading) and light (sign-in) backgrounds.
+        Eye centre: (54, 54). Iris radius: 18. Almond spans x 26–82, y 27–81.
+    -->
+
+    <!-- ── Sclera (white almond) ── -->
+    <path
+        android:fillColor="#FAFAFA"
+        android:pathData="M26,54 C38,27 70,27 82,54 C70,81 38,81 26,54 Z" />
+
+    <!-- ── Iris: 6 spectrum sectors ── -->
+    <path android:fillColor="#E53935"
+        android:pathData="M54,54 L72,54 A18,18 0 0 1 63,69.6 Z" />
+    <path android:fillColor="#FB8C00"
+        android:pathData="M54,54 L63,69.6 A18,18 0 0 1 45,69.6 Z" />
+    <path android:fillColor="#FDD835"
+        android:pathData="M54,54 L45,69.6 A18,18 0 0 1 36,54 Z" />
+    <path android:fillColor="#43A047"
+        android:pathData="M54,54 L36,54 A18,18 0 0 1 45,38.4 Z" />
+    <path android:fillColor="#1E88E5"
+        android:pathData="M54,54 L45,38.4 A18,18 0 0 1 63,38.4 Z" />
+    <path android:fillColor="#8E24AA"
+        android:pathData="M54,54 L63,38.4 A18,18 0 0 1 72,54 Z" />
+
+    <!-- ── Iris ring border ── -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#050D2A"
+        android:strokeWidth="1.5"
+        android:pathData="M54,36 A18,18 0 1 0 54,72 A18,18 0 1 0 54,36 Z" />
+
+    <!-- ── Pupil ── -->
+    <path
+        android:fillColor="#050D2A"
+        android:pathData="M54,46 A8,8 0 1 0 54,62 A8,8 0 1 0 54,46 Z" />
+
+    <!-- ── Pupil highlight ── -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M58,48.5 A2.8,2.8 0 1 0 58,54.1 A2.8,2.8 0 1 0 58,48.5 Z" />
+
+    <!-- ── Almond outline (navy stroke — visible on light and dark backgrounds) ── -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#1A2E6B"
+        android:strokeWidth="2.5"
+        android:pathData="M26,54 C38,27 70,27 82,54 C70,81 38,81 26,54 Z" />
+
+</vector>
