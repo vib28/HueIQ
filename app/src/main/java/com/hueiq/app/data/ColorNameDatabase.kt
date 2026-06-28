@@ -228,7 +228,7 @@ object ColorNameDatabase {
         var bestName = "Unknown"
         var bestHex = "#%02X%02X%02X".format(r, g, b)
 
-        for ((namedLab, name, _) in labColors) {
+        for ((namedLab, name, namedHex) in labColors) {
             val dL = lab[0] - namedLab[0]
             val da = lab[1] - namedLab[1]
             val db = lab[2] - namedLab[2]
@@ -236,7 +236,7 @@ object ColorNameDatabase {
             if (dist < bestDist) {
                 bestDist = dist
                 bestName = name
-                bestHex = "#%02X%02X%02X".format(r, g, b)
+                bestHex = namedHex
             }
         }
         return ColorMatch(bestName, bestHex)

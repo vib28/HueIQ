@@ -237,6 +237,8 @@ Real-time color sampling at 30 FPS would update the UI 30 times per second — i
 
 Euclidean distance in RGB space is perceptually non-uniform — a small RGB delta in one region of color space looks like a larger change than the same delta elsewhere. CIE Lab is designed to be perceptually uniform: equal distances look equally different to the human eye. The `ColorNameDatabase` converts the sampled RGB to Lab, then finds the nearest named color by Lab distance.
 
+**Bug fixed:** `ColorNameDatabase.nearest()` previously returned the input color's hex in `ColorMatch.hex` on every loop update (the named hex stored in `labColors` was discarded with `_`). Fixed to return the matched named color's hex. `ScanColorViewModel` was also updated to compute `DetectedColor.hex` directly from `r, g, b` rather than from `match.hex`, so the scanner always displays the actual detected color's hex code.
+
 **Key files:** `ui/camera/ColorAnalyzer.kt`, `ui/camera/ScanColorViewModel.kt`, `ui/screens/ScanColorScreen.kt`, `data/ColorNameDatabase.kt`
 
 ---
@@ -262,6 +264,8 @@ The simulation applies standard transformation matrices in linear sRGB space to 
 `MY_COLORS` is a dynamic category that shows only colors the user has saved from the camera scanner. It integrates into the existing `FilterChip` row automatically because it is an enum value.
 
 **Color count:** ~300+ entries after the color expansion (added ~75–80 named colors across all categories).
+
+**Bug fixed:** `ColorLibraryScreen` LazyColumn used `it.hex + it.name` as the item key. If a user saved a color whose hex and name exactly matched a library entry, the ALL view would crash with `IllegalArgumentException: Key was already used`. Fixed by including `it.category.name` in the key: `"${it.category.name}_${it.hex}_${it.name}"`, which differentiates library entries (e.g. `REDS`) from saved entries (`MY_COLORS`).
 
 **Key files:** `data/ColorLibraryData.kt`, `data/ColorNameDatabase.kt`, `ui/screens/ColorLibraryScreen.kt`, `ui/screens/ColorDetailScreen.kt`
 

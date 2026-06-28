@@ -137,7 +137,7 @@ fun ColorLibraryScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(filtered, key = { it.hex + it.name }) { entry ->
+            items(filtered, key = { "${it.category.name}_${it.hex}_${it.name}" }) { entry ->
                 ColorCard(entry = entry, onClick = { onColorClick(entry.r, entry.g, entry.b, entry.name) })
             }
 

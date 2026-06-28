@@ -21,6 +21,6 @@ class ScanColorViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun onColorSampled(r: Int, g: Int, b: Int) {
         val match = ColorNameDatabase.nearest(r, g, b)
-        _detectedColor.value = DetectedColor(r, g, b, match.hex, match.name)
+        _detectedColor.value = DetectedColor(r, g, b, "#%02X%02X%02X".format(r, g, b), match.name)
     }
 }

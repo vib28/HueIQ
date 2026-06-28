@@ -333,6 +333,10 @@ adb shell am start -n "com.hueiq.app/.MainActivity"
 - ✅ Color Detail Screen (fullscreen swatch + CVD type selector + save/unsave)
 - ✅ Google Sign-In (Credential Manager API)
 - ✅ Theme toggle (SYSTEM / LIGHT / DARK, persisted to DataStore)
+- ✅ Bug fix: Duplicate LazyColumn key crash in Color Library ALL view (`ColorLibraryScreen.kt`)
+- ✅ Bug fix: `ColorNameDatabase.nearest()` now returns the matched named color's hex, not the input hex (`ColorNameDatabase.kt`)
+- ✅ Bug fix: `ScanColorViewModel` computes `DetectedColor.hex` directly from r/g/b so the scanner always shows the actual detected hex (`ScanColorViewModel.kt`)
+- ✅ Bug fix: `IshiharaTestScreen` back arrow updated from deprecated `Icons.Outlined.ArrowBack` to `Icons.AutoMirrored.Outlined.ArrowBack`
 
 ---
 
